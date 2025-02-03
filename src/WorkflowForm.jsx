@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
+import { AlertCircle } from 'lucide-react';
 
-// const API = 'https://elite-poc.growexx.com/process_workflow'
-// const API = 'https://5ad5-120-72-93-82.ngrok-free.app/process_task'
-const API = "https://elite-poc.growexx.com/process_task"
+// const API = 'http://localhost:3000/api/getNextWorkflow'
+const API = 'https://elite-poc.growexx.com/process_task'
+// const API = "https://2d4f-2402-3a80-4658-4892-517-d/process_task"
 
 const taskForm = () => {
   const [initialtaskData, setInitialtaskData] = useState({
@@ -13,12 +14,12 @@ const taskForm = () => {
       options: { 'Employment Law': "task2", "Business Contract Dispute": "task3" },
     },
     task2: {
-      question: "Enter additional personal details",
+      question: "Employment Law Assistance Request",
       fields: ["Phone Number", "Address", "Employment Status", "Type of Employment Issue", "Date of Incident", "Employer Contacted?", "Case Description"],
       options: { X: "end", Y: "end" },
     },
     task3: {
-      question: "Enter company details",
+      question: "Business Contract Dispute Intake Form",
       fields: ["Company Name", "Job Title", "Type of Contract", "Nature of the Dispute", "Date the Dispute Started", "Attempts to Resolve the Dispute", "Upload Contract or Supporting Documents"],
       options: { M: "end", N: "end" },
     },
@@ -47,12 +48,13 @@ const taskForm = () => {
   useEffect(() => {
     if (taskReason) {
       toast(
-        <div style={{ textAlign: "left" }}> {/* Align content to the left */}
+        <div style={{ textAlign: "left" }}>
+          {/* Align content to the left */}
           <h3 className="font-semibold">Reason for task:</h3>
           <p className="text-md mt-1">{taskReason}</p>
         </div>,
         {
-          duration: 50000,
+          duration: 1500000,
           position: "top-left", // Align to the top-left
           style: {
             background: "#432dd7",
@@ -61,6 +63,8 @@ const taskForm = () => {
             borderRadius: "8px",
             boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
             textAlign: "left", // Ensure text alignment is left
+            width: "450px", // Increase the width
+            maxWidth: "90vw", // Ensure it remains responsive
           },
         }
       );
@@ -159,26 +163,16 @@ const taskForm = () => {
       const [nexttask, reason] = Object.entries(data)[1];
       const conflictCheck = Object.entries(data)[0];
 
-      console.log(conflictCheck, "dhyey");
-
       if (conflictCheck[0] === "Conflict Check" && Array.isArray(conflictCheck[1])) {
+        const conflictData = conflictCheck[1];
 
-        const conflictData = conflictCheck[1].slice(1);
 
-        conflictData.forEach(([fullName, similarity]) => {
-          toast(
-            `${fullName} - Similarity: ${similarity}`,
-            {
-              icon: "⚠️",
-              style: {
-                borderRadius: "8px",
-                background: "#333",
-                color: "#fff",
-              },
-              duration: 30000,
-            }
-          );
-        })
+        toast.custom(
+          (t) => (
+            <ConflictCheckToast data={conflictData} />
+          ),
+          { duration: 1500000 }
+        );
       }
 
       settaskData((prev) => {
@@ -312,7 +306,7 @@ const taskForm = () => {
         position="top-left" // Align toasts to the top-left corner
         toastOptions={{
           style: {
-            margin: "16px", // Add some margin
+            marginBottom: "20px",
             padding: "16px",
             background: "#FEF3C7", // Background color (yellow-100)
             color: "#92400E", // Text color (yellow-900)
@@ -332,4 +326,77 @@ const taskForm = () => {
   );
 };
 
+const ConflictCheckToast = ({ data }) => {
+  const CircularProgress = ({ percentage }) => {
+    // Remove % sign if present and convert to number
+    const numericPercentage = parseFloat(percentage.replace('%', ''));
+    const radius = 30; // Increased from 18
+    const circumference = 2 * Math.PI * radius;
+    const strokeDasharray = circumference;
+    const strokeDashoffset = circumference - (numericPercentage / 100) * circumference;
+
+    return (
+      <div className="relative inline-flex items-center justify-center">
+        <svg className="w-16 h-16 transform -rotate-90"> {/* Increased from w-12 h-12 */}
+          <circle
+            className="text-gray-200"
+            strokeWidth="4"
+            stroke="currentColor"
+            fill="transparent"
+            r={radius}
+            cx="32" // Adjusted center point
+            cy="32" // Adjusted center point
+          />
+          <circle
+            className="text-blue-600"
+            strokeWidth="4"
+            strokeLinecap="round"
+            stroke="currentColor"
+            fill="transparent"
+            r={radius}
+            cx="32" // Adjusted center point
+            cy="32" // Adjusted center point
+            style={{
+              strokeDasharray: `${circumference} ${circumference}`,
+              strokeDashoffset: strokeDashoffset
+            }}
+          />
+        </svg>
+        <span className="absolute text-base font-semibold text-gray-700"> {/* Increased text size */}
+          {numericPercentage.toFixed(1)}%
+        </span>
+      </div>
+    );
+  };
+
+  // Skip header row
+  const conflictData = data.slice(1);
+
+  return (
+    <div className="min-w-[450px] bg-white rounded-lg shadow-lg overflow-hidden"> {/* Increased min-width */}
+      {/* Header */}
+      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center space-x-2">
+          <AlertCircle className="w-5 h-5 text-amber-500" />
+          <h3 className="text-lg font-semibold text-gray-900">Potential Matches Found</h3>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {conflictData.map(([fullName, similarity], index) => (
+          <div
+            key={index}
+            className="flex items-center justify-between py-4 border-b border-gray-100 last:border-0" // Increased padding
+          >
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">{fullName}</p>
+            </div>
+            <CircularProgress percentage={similarity} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 export default taskForm;
