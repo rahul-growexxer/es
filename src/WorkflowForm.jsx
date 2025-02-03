@@ -1,27 +1,31 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
 
-const WorkflowForm = () => {
-  const [initialWorkflowData, setInitialWorkflowData] = useState({
-    workflow1: {
+// const API = 'https://elite-poc.growexx.com/process_workflow'
+// const API = 'https://5ad5-120-72-93-82.ngrok-free.app/process_task'
+const API = "http://localhost:3000/api/getNextWorkflow"
+
+const taskForm = () => {
+  const [initialtaskData, setInitialtaskData] = useState({
+    task1: {
       question: "Enter your details",
-      fields: ["First Name", "Last Name", "Email", "Issue Description"],
-      options: { 'Employment Law': "workflow2", "Business Contract Dispute": "workflow3" },
+      fields: ["First Name", "Middle Name", "Last Name", "Email", "Issue Description"],
+      options: { 'Employment Law': "task2", "Business Contract Dispute": "task3" },
     },
-    workflow2: {
+    task2: {
       question: "Enter additional personal details",
       fields: ["Phone Number", "Address", "Employment Status", "Type of Employment Issue", "Date of Incident", "Employer Contacted?", "Case Description"],
       options: { X: "end", Y: "end" },
     },
-    workflow3: {
+    task3: {
       question: "Enter company details",
       fields: ["Company Name", "Job Title", "Type of Contract", "Nature of the Dispute", "Date the Dispute Started", "Attempts to Resolve the Dispute", "Upload Contract or Supporting Documents"],
       options: { M: "end", N: "end" },
     },
   });
 
-  const [workflowData, setWorkflowData] = useState(initialWorkflowData);
-  const [currentWorkflow, setCurrentWorkflow] = useState("workflow1");
+  const [taskData, settaskData] = useState(initialtaskData);
+  const [currenttask, setCurrenttask] = useState("task1");
   const [formData, setFormData] = useState({});
   const [selectedOption, setSelectedOption] = useState("");
   const [selectionPath, setSelectionPath] = useState([]);
@@ -29,23 +33,23 @@ const WorkflowForm = () => {
   const [dynamicOptions, setDynamicOptions] = useState([]);
   const [showNewOptionInput, setShowNewOptionInput] = useState(false);
   const [newOptionName, setNewOptionName] = useState("");
-  const [workflowReason, setWorkflowReason] = useState("");
-  const [workflowHistory, setWorkflowHistory] = useState([]);
-  const workflowRef = useRef(null);
+  const [taskReason, settaskReason] = useState("");
+  const [taskHistory, settaskHistory] = useState([]);
+  const taskRef = useRef(null);
 
   useEffect(() => {
-    if (workflowRef.current) {
-      workflowRef.current.scrollIntoView({ behavior: "smooth" });
+    if (taskRef.current) {
+      taskRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [workflowHistory]);
+  }, [taskHistory]);
 
-  // Show workflowReason as a toast message
+  // Show taskReason as a toast message
   useEffect(() => {
-    if (workflowReason) {
+    if (taskReason) {
       toast(
         <div style={{ textAlign: "left" }}> {/* Align content to the left */}
-          <h3 className="font-semibold">Reason for Workflow:</h3>
-          <p className="text-md mt-1">{workflowReason}</p>
+          <h3 className="font-semibold">Reason for task:</h3>
+          <p className="text-md mt-1">{taskReason}</p>
         </div>,
         {
           duration: 50000,
@@ -61,7 +65,7 @@ const WorkflowForm = () => {
         }
       );
     }
-  }, [workflowReason]);
+  }, [taskReason]);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -79,29 +83,29 @@ const WorkflowForm = () => {
     if (dynamicOptions.includes(selectedOption)) {
       setLoading(true);
       try {
-        const response = await fetch("http://localhost:3000/api/getNextWorkflow", {
+        const response = await fetch(API, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ option: selectedOption }),
         });
 
         const data = await response.json();
-        const nextWorkflow = data.nextWorkflow;
+        const nexttask = data.nexttask;
 
-        if (nextWorkflow) {
-          setCurrentWorkflow(nextWorkflow);
-          setWorkflowData((prev) => ({
+        if (nexttask) {
+          setCurrenttask(nexttask);
+          settaskData((prev) => ({
             ...prev,
-            [nextWorkflow]: {
+            [nexttask]: {
               question: `Dynamic question for ${selectedOption}`,
               fields: ["Dynamic Field 1", "Dynamic Field 2"],
               options: { Continue: "end" },
             },
           }));
 
-          setInitialWorkflowData((prev) => ({
+          setInitialtaskData((prev) => ({
             ...prev,
-            [nextWorkflow]: {
+            [nexttask]: {
               question: `Dynamic question for ${selectedOption}`,
               fields: ["Dynamic Field 1", "Dynamic Field 2"],
               options: { Continue: "end" },
@@ -109,15 +113,15 @@ const WorkflowForm = () => {
           }));
         }
       } catch (error) {
-        console.error("Error fetching next workflow:", error);
+        console.error("Error fetching next task:", error);
       } finally {
         setLoading(false);
       }
     } else {
-      const nextWorkflow = workflowData[currentWorkflow].options[selectedOption];
-      if (nextWorkflow) {
-        setCurrentWorkflow(nextWorkflow);
-        setWorkflowHistory((prev) => [...prev, currentWorkflow]);
+      const nexttask = taskData[currenttask].options[selectedOption];
+      if (nexttask) {
+        setCurrenttask(nexttask);
+        settaskHistory((prev) => [...prev, currenttask]);
       }
     }
 
@@ -129,67 +133,90 @@ const WorkflowForm = () => {
 
     setLoading(true);
 
-    const workflowWiseData = {};
-    Object.keys(initialWorkflowData).forEach((workflowKey) => {
-      workflowWiseData[workflowKey] = {};
-      initialWorkflowData[workflowKey].fields.forEach((field) => {
-        workflowWiseData[workflowKey][field] = formData[field] || "";
+    const taskWiseData = {};
+    Object.keys(initialtaskData).forEach((taskKey) => {
+      taskWiseData[taskKey] = {};
+      initialtaskData[taskKey].fields.forEach((field) => {
+        taskWiseData[taskKey][field] = formData[field] || "";
       });
     });
 
     const payload = {
-      Options: initialWorkflowData.workflow1.options,
-      workflows: workflowWiseData,
-      currentWorkflow,
+      Options: initialtaskData.task1.options,
+      tasks: taskWiseData,
+      currenttask,
       newOption: newOptionName,
     };
 
     try {
-      const response = await fetch("http://localhost:3000/api/getNextWorkflow", {
+      const response = await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
-      const [nextWorkflow, reason] = Object.entries(data)[0];
+      const [nexttask, reason] = Object.entries(data)[1];
+      const conflictCheck = Object.entries(data)[0];
 
-      setWorkflowData((prev) => {
-        const updatedWorkflow = {
+      console.log(conflictCheck, "dhyey");
+
+      if (conflictCheck[0] === "Conflict Check" && Array.isArray(conflictCheck[1])) {
+
+        const conflictData = conflictCheck[1].slice(1);
+
+        conflictData.forEach(([fullName, similarity]) => {
+          toast(
+            `${fullName} - Similarity: ${similarity}`,
+            {
+              icon: "⚠️",
+              style: {
+                borderRadius: "8px",
+                background: "#333",
+                color: "#fff",
+              },
+              duration: 30000,
+            }
+          );
+        })
+      }
+
+      settaskData((prev) => {
+        const updatedtask = {
           ...prev,
-          [currentWorkflow]: {
-            ...prev[currentWorkflow],
-            options: { ...prev[currentWorkflow].options, [newOptionName]: nextWorkflow },
+          [currenttask]: {
+            ...prev[currenttask],
+            options: { ...prev[currenttask].options, [newOptionName]: nexttask },
           },
         };
 
-        setInitialWorkflowData(updatedWorkflow);
-        return updatedWorkflow;
+        setInitialtaskData(updatedtask);
+        return updatedtask;
       });
 
       setDynamicOptions([...dynamicOptions, newOptionName]);
       setNewOptionName("");
       setShowNewOptionInput(false);
-      setWorkflowReason(reason);
+      settaskReason(reason);
 
       setSelectionPath((prev) => [...prev, newOptionName]);
-      setCurrentWorkflow(nextWorkflow);
-      setWorkflowHistory((prev) => [...prev, currentWorkflow]);
+      setCurrenttask(nexttask);
+      settaskHistory((prev) => [...prev, currenttask]);
 
     } catch (error) {
-      console.error("Error fetching next workflow:", error);
+      console.error("Error fetching next task:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const renderWorkflow = (workflowKey) => {
-    const workflow = workflowData[workflowKey];
+  const rendertask = (taskKey) => {
+    const task = taskData[taskKey];
     return (
-      <div key={workflowKey} className="p-8 max-w-lg mx-auto bg-white rounded-2xl shadow-lg mb-6" ref={workflowKey === currentWorkflow ? workflowRef : null}>
-        <h2 className="text-2xl font-extrabold mb-6 text-center">{workflow.question}</h2>
+      <div key={taskKey} className="p-8 max-w-lg mx-auto bg-white rounded-2xl shadow-lg mb-6" ref={taskKey === currenttask ? taskRef : null}>
+        <h2 className="text-2xl font-extrabold mb-6 text-center">{task.question}</h2>
         <form className="space-y-5">
-          {workflow.fields?.map((field) => (
+          {task.fields?.map((field) => (
             <div key={field} className="flex flex-col">
               <label className="text-lg font-medium mb-2">{field}</label>
               <input
@@ -202,13 +229,13 @@ const WorkflowForm = () => {
           ))}
         </form>
 
-        {workflowKey === currentWorkflow && renderOptionsSection()}
+        {taskKey === currenttask && renderOptionsSection()}
       </div>
     );
   };
 
   const renderOptionsSection = () => {
-    if (currentWorkflow === "workflow1") {
+    if (currenttask === "task1") {
       return (
         <div className="mt-6">
           <label className="block text-lg font-medium mb-2">Choose a legal issue</label>
@@ -219,7 +246,7 @@ const WorkflowForm = () => {
               className="flex-1 px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
             >
               <option value="">Select an option</option>
-              {Object.keys(workflowData[currentWorkflow].options).map((option) => (
+              {Object.keys(taskData[currenttask].options).map((option) => (
                 <option key={option} value={option}>{option}</option>
               ))}
             </select>
@@ -262,7 +289,7 @@ const WorkflowForm = () => {
       );
     }
 
-    if (currentWorkflow === "workflow2" || currentWorkflow === "workflow3") {
+    if (currenttask === "task2" || currenttask === "task3") {
       return (
         <div className="mt-6">
           <button
@@ -295,8 +322,8 @@ const WorkflowForm = () => {
           },
         }}
       /> {/* Add this line to enable toast messages */}
-      {workflowHistory.map((workflowKey) => renderWorkflow(workflowKey))}
-      {renderWorkflow(currentWorkflow)}
+      {taskHistory.map((taskKey) => rendertask(taskKey))}
+      {rendertask(currenttask)}
       <div className="mt-6 text-center">
         <h3 className="font-semibold text-lg">Selected Path:</h3>
         <p className="text-md mt-1">{selectionPath.join(" > ")}</p>
@@ -305,4 +332,4 @@ const WorkflowForm = () => {
   );
 };
 
-export default WorkflowForm;
+export default taskForm;
